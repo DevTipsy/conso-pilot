@@ -1,103 +1,113 @@
 # conso-pilot
 
-Plugin Claude Code qui mesure et réduit la consommation de tokens. Spécification complète : [SPEC.md](SPEC.md).
+> 🇬🇧 English below · 🇫🇷 Version française plus bas
 
-État : **lots 1 à 6 terminés** (mesure, état de session, journal, `/conso`, `/conso-pilot:status` ; handoff, sauvegarde automatique, relecture, `/reprendre` ; alertes handoff et cache, barre d'état, `/conso-pilot:setup` et `uninstall` ; dossiers lourds, gains dans `/conso` ; contexte chargé et `/lean` ; conseils de modèle et d'effort, agents `runner` et `architect`).
+A Claude Code plugin that measures and reduces how many tokens Claude Code burns — context, handoffs, cache, and weighted cost.
+Un plugin Claude Code qui mesure et réduit la consommation de tokens de Claude Code — contexte, handoff, cache et coût pondéré.
 
-## Installation (scope utilisateur)
+---
+
+## 🇬🇧 English
+
+### What it does
+
+Claude Code sessions quietly accumulate cost: context keeps growing, the prompt cache expires, heavy folders get read into memory, and an over-powered model runs trivial tasks. **conso-pilot** watches all of this and nudges you at the right moment.
+
+- **Measure** — per-project / per-model consumption (today & 7 days), raw and cost-weighted, including sub-agents and your most expensive sessions.
+- **Handoff & resume** — summarize a long session into a compact note, clear the chat, and reload the summary automatically so you keep going without the token bloat.
+- **Cache alerts** — warns (or blocks) when you're about to pay full price because the prompt cache expired.
+- **Lean context** — shows the real weight of every plugin, skill, connector and MCP server loaded into each chat, and lets you turn off what you don't use.
+- **Model & effort advice** — classifies each request and suggests a cheaper model or effort level when the task doesn't need the expensive one.
+- **Heavy-folder guard** — blocks broad reads of `node_modules/`, `build/`, lock files, etc., and steers Claude toward targeted reads.
+
+### Installation
 
 ```bash
-claude plugin marketplace add /Users/thibault/Documents/Projets/conso-pilot
+/plugin marketplace add DevTipsy/conso-pilot
 ```
+```bash
+/plugin install conso-pilot@conso-pilot
+```
+
+Then run once (installs the status line and allows `/handoff` to save without prompting — shows a diff and asks before writing):
 
 ```bash
-claude plugin install conso-pilot@conso-pilot
+/conso-pilot:setup
 ```
 
-Mise à jour après modification du dépôt :
+Update later:
 
 ```bash
-claude plugin marketplace update conso-pilot && claude plugin update conso-pilot@conso-pilot
+/plugin marketplace update conso-pilot && /plugin update conso-pilot@conso-pilot
 ```
 
-Puis, une fois, `/conso-pilot:setup` (barre d'état et permission de `/handoff`, avec diff et confirmation).
+### Main commands
 
-Pour un essai ponctuel sans installation : `claude --plugin-dir /Users/thibault/Documents/Projets/conso-pilot`.
+| Command | What it does |
+|---|---|
+| `/conso` | Consumption by project and model (today / 7 days), raw and weighted; sub-agent share; most expensive sessions; estimated savings |
+| `/handoff` | Claude writes a compact summary of the session, saves it, and clears the chat; the summary is reloaded immediately |
+| `/reprendre` | Reloads the project's last handoff (`--auto` for the latest auto-save) |
+| `/lean` | Weight of loaded plugins / skills / connectors / MCP servers; `/lean off <name>` disables one after confirmation |
+| `/conso-pilot:status` | Config, session state, detected integrations, last 5 errors |
+| `/conso-pilot:setup` / `uninstall` | Install or remove the status line and handoff permission |
 
-## Commandes
+All data stays local in `~/.claude/conso-pilot/`. Nothing is sent anywhere.
+
+Full specification: [SPEC.md](SPEC.md).
+
+---
+
+## 🇫🇷 Français
+
+### À quoi ça sert
+
+Une session Claude Code coûte de plus en plus cher sans qu'on le voie : le contexte grossit, le cache du prompt expire, des dossiers lourds sont lus en mémoire, un modèle trop puissant traite des tâches triviales. **conso-pilot** surveille tout ça et t'alerte au bon moment.
+
+- **Mesurer** — consommation par projet / par modèle (jour & 7 jours), brute et pondérée, sous-agents et sessions les plus coûteuses compris.
+- **Handoff & reprise** — résume une longue session en une note compacte, vide la discussion, et recharge le résumé automatiquement : tu continues sans traîner tout le contexte.
+- **Alertes de cache** — prévient (ou bloque) quand tu vas payer plein tarif parce que le cache du prompt a expiré.
+- **Contexte allégé** — affiche le poids réel de chaque plugin, skill, connecteur et serveur MCP chargé dans chaque discussion, et permet de désactiver ce qui ne sert pas.
+- **Conseils de modèle et d'effort** — classe chaque demande et suggère un modèle ou un effort moins cher quand la tâche ne justifie pas le plus puissant.
+- **Garde-fou dossiers lourds** — bloque les lectures larges de `node_modules/`, `build/`, fichiers de verrouillage, etc., et oriente Claude vers des lectures ciblées.
+
+### Installation
+
+```bash
+/plugin marketplace add DevTipsy/conso-pilot
+```
+```bash
+/plugin install conso-pilot@conso-pilot
+```
+
+Puis, une fois (installe la barre d'état et autorise `/handoff` à enregistrer sans confirmation — affiche un diff et demande avant d'écrire) :
+
+```bash
+/conso-pilot:setup
+```
+
+Mise à jour plus tard :
+
+```bash
+/plugin marketplace update conso-pilot && /plugin update conso-pilot@conso-pilot
+```
+
+### Commandes principales
 
 | Commande | Rôle |
 |---|---|
-| `/conso` | Consommation par projet et modèle (jour / 7 jours), brute et pondérée ; part des sous-agents ; sessions les plus coûteuses ; gains estimés (rtk, lectures bloquées, handoffs ; context-mode à part) |
+| `/conso` | Consommation par projet et modèle (jour / 7 jours), brute et pondérée ; part des sous-agents ; sessions les plus coûteuses ; gains estimés |
+| `/handoff` | Claude rédige un résumé compact de la session, l'enregistre et vide la discussion ; le résumé est rechargé aussitôt |
+| `/reprendre` | Recharge le dernier handoff du projet (`--auto` : la dernière sauvegarde automatique) |
+| `/lean` | Poids des plugins / skills / connecteurs / serveurs MCP chargés ; `/lean off <nom>` en désactive un après confirmation |
 | `/conso-pilot:status` | Configuration, état de la session, intégrations détectées, 5 dernières erreurs |
-| `/handoff` | Claude rédige un résumé structuré (≤ 1 500 tokens), enregistré par `bin/save-handoff`, puis vide la discussion (app : automatiquement, après ton accord ; CLI : tape `/clear`) — le résumé est rechargé aussitôt. `/handoff --garder` : sans vider |
-| `/reprendre` | Charge le dernier handoff du projet ; `--auto` : la dernière sauvegarde automatique |
-| `/lean` | Poids des plugins, skills, connecteurs et serveurs MCP chargés à chaque discussion, avec leur dernier usage dans le projet ; `/lean off <nom>` / `/lean on <nom>` (`--scope local\|projet\|user`) désactive ou réactive un plugin Claude Code ou un serveur de `.mcp.json`, après aperçu et confirmation |
-| `/conso-pilot:setup` | Installe (ou enchaîne avec l'existante) la barre d'état et autorise `save-handoff` ; diff et confirmation avant écriture, sauvegarde datée |
-| `/conso-pilot:uninstall` | Retire ce que setup a ajouté (restauration à l'identique si `settings.json` n'a pas bougé) ; garde les données |
+| `/conso-pilot:setup` / `uninstall` | Installe ou retire la barre d'état et la permission de handoff |
 
-## Alertes
+Toutes les données restent en local dans `~/.claude/conso-pilot/`. Rien n'est envoyé ailleurs.
 
-- **🔴 Handoff maintenant** : contexte ajouté (depuis la première réponse ou le dernier compactage) ≥ 40k et tâche terminée (pas d'appel d'outil ni de question en fin de réponse, tâches toutes terminées, aucune tâche de fond) ; rappel tous les +20k. Dès +100k : à chaque message. Plus rien après `/handoff`.
-- **Cache expiré** : pause plus longue que la durée du cache (1 h en général) avec ≥ 50k de contexte → le message est bloqué une fois (`cacheGuard: "block"`) ; ↑ puis Entrée pour l'envoyer quand même. `"hint"` : simple avertissement ; `"off"`.
-- Reprise d'une ancienne discussion au cache expiré : une ligne d'avertissement.
-- Canaux : message dans la discussion (non envoyé au modèle), notification macOS (`notifications: false` pour couper), barre d'état en rouge.
+Spécification complète : [SPEC.md](SPEC.md).
 
-## Dossiers lourds
-
-`DerivedData/`, `Pods/`, `node_modules/`, `build/`, `.build/`, `dist/`, `.gradle/`, `*.xcarchive`, fichiers de verrouillage et tout fichier texte > 1 Mo (`heavyPaths`, `heavyFileBytes`) :
-
-- accès large refusé, avec une consigne à Claude (Read complet ou `limit` > 300, `cat`, `less`, `ls -R`, `find`, `tree`, `grep` au motif vague, `head`/`tail` de plus de 300 lignes, Glob `**`) ;
-- accès ciblé autorisé avec un avertissement (Grep avec un vrai motif, Read avec `limit` ≤ 300, `tail -n 100`) ;
-- `heavyPaths: []` et `heavyFileBytes: 0` désactivent le contrôle.
-
-## Modèle, effort et agents
-
-- Chaque message est classé sans IA (simple, standard, complexe, critique : longueur, fichiers mentionnés, mots-clés comme « renomme », « architecture », « ultrathink ») ; correspondance dans `advice` (défaut : Sonnet/low, Sonnet/medium, Opus/high, Opus/xhigh).
-- **Modèle** : conseil au premier message (ou tant que le contexte ajouté < 10k), une fois par niveau ; un modèle plus cher n'est conseillé que pour les tâches complexes ou critiques. `modelAdvice` : `"hint"` (défaut, simple message), `"block"` (premier envoi bloqué, ↑ puis Entrée pour l'envoyer tel quel), `"off"`. Changer de modèle vide le cache : c'est pour ça que le conseil arrive tôt.
-- **Effort** : conseillé à tout moment si l'écart est d'au moins 2 crans (au plus une fois toutes les 5 demandes). Sur Opus 5.5, Sonnet 5.5 et Fable 5.1, changer d'effort **ne vide pas le cache**.
-- `opusplan` (alias natif) : Opus pour planifier, Sonnet pour exécuter — bon compromis pour les tâches complexes.
-- Mode rapide actif : rappel au premier message (il double le coût pondéré).
-- Agents fournis : `runner` (Haiku, Bash et Read) lance builds et tests et ne rend que les erreurs utiles ; `architect` (Opus, effort high, lecture seule) rend une recommandation argumentée. Une consigne de 30 tokens en début de discussion indique à Claude de leur déléguer (et à `Explore` les recherches larges) ; `delegationHint: false` pour la retirer.
-- `/conso` indique combien de conseils ont été suivis.
-- Changement de modèle en cours de session : la confirmation native de Claude Code s'applique ; `modelSwitchAskSources` permet d'y ajouter la question de conso-pilot (CLI, à relever).
-
-## Contexte chargé (`/lean`)
-
-- Inventaire **relevé, pas estimé** : Claude Code écrit dans le transcript la liste exacte des skills, des outils (différés ou non), des instructions MCP et des agents envoyés au modèle. conso-pilot la lit à la première réponse de chaque discussion (poids = caractères ÷ 4, `leanCharsPerToken`). Plugins et connecteurs de l'app compris.
-- Au-delà de 15k tokens désactivables (`leanWarnTokens`) : « ~XXk tokens d'outils/skills chargés — /lean pour alléger », une fois par jour et par projet.
-- Dernier usage : appels `Skill`, outils `mcp__…`, agents et commandes `/plugin:nom` lus dans les transcripts du projet (sous-agents compris), relus de façon incrémentale.
-- Désactivation par le script, jamais par Claude : plugin → `enabledPlugins` (défaut : `.claude/settings.local.json` du projet, non partagé) ; serveur de `.mcp.json` → `disabledMcpjsonServers`. Serveur MCP utilisateur ou local : `/mcp` ; plugin de l'app ou connecteur : réglages de l'app. Sauvegarde datée dans `backups/`, historique dans `lean-actions.json`.
-
-## Barre d'état (CLI seulement)
-
-`Sonnet·medium · ctx 74k (+52k) · 5h 42% · 7j 18% · cache 3:12 · éco ~528k` — « éco » : gains pondérés sur 7 jours, recalculés en arrière-plan toutes les 5 min ; minuteur du cache dans ses 10 dernières minutes, segments de droite retirés si la largeur manque. L'app desktop n'affiche pas `statusLine`. Une barre existante peut être enchaînée (sa sortie en préfixe).
-
-## Handoff et reprise
-
-- `/handoff` puis `/clear` dans les 30 min : le résumé est rechargé automatiquement (plafond 2 000 tokens). Nouvelle discussion dans les 2 h : idem. Au-delà, une ligne propose `/reprendre`.
-- Après un compactage, le handoff n'est réinjecté que s'il date de la session courante et que context-mode est inactif.
-- Sauvegarde automatique, sans IA ni token : à chaque fin de réponse (au plus toutes les 5 min), avant un compactage et en fin de session ; 10 dernières demandes, fichiers modifiés, liste de tâches, 5 dernières commandes en erreur. Jamais injectée automatiquement.
-- Option `aiSummary` (défaut `false`) : résumé détaché par `claude -p --model haiku` en fin de session (consomme du quota).
-- `/conso-pilot:setup` autorise `Bash(node ~/.claude/conso-pilot/bin/save-handoff:*)` : plus de confirmation à chaque `/handoff`.
-
-## Données
-
-Tout est dans `~/.claude/conso-pilot/` :
-
-- `config.json` : créée avec les défauts au premier lancement (spec annexe A) ;
-- `state/<session_id>.json` : état de session (offset du transcript, baseline, contexte, modèle, effort, TTL du cache) ;
-- `log-AAAA-MM.jsonl` : une ligne par tour et par modèle (`type: "turn"`, champs `project, session, agent, model, effort, fast, input, cache_5m, cache_1h, cache_read, output, context, calls`), plus les événements `compact`, `clear`, `handoff`, `model_switch`, `deny` (accès lourd refusé, taille évitée), `cache_block` ;
-- `handoffs/<slug-du-projet>/` : handoffs datés, `latest.md` (dernier handoff manuel, seul relu automatiquement), `auto/<session8>.md` (sauvegarde automatique) ; rétention 30 jours / 50 fichiers par projet ;
-- `state/live/<session_id>.json` : derniers relevés de la barre d'état (modèle, effort, mode rapide, contexte) ;
-- `bin/statusline`, `bin/save-handoff` : lanceurs stables installés par setup (suivent les mises à jour du plugin via `plugin-root`) ; `install.json` : ce que setup a modifié ; `backups/` : copies datées de `settings.json` ;
-- `cache/` : `rtk-gain.json` (sortie de `rtk gain`, 5 min), `eco.json` (total des gains pour la barre d'état), `inventory/<projet>.json` (dernier inventaire du contexte chargé), `usage/<projet>.json` (dernier usage par élément, offsets de lecture), `lean-warned.json` ;
-- `lean-actions.json` : désactivations et réactivations faites par `/lean` ;
-- `errors.log` : erreurs des hooks (fail-open, tronqué à 1 Mo).
-
-## Tokens pondérés
-
-`(input + 1,25 × cache_5m + 2 × cache_1h + 0,1 × cache_read + 5 × output) × poids du modèle × (mode rapide ? 2 : 1)`, poids en config (`costWeights`).
+---
 
 ## Tests
 
@@ -105,4 +115,8 @@ Tout est dans `~/.claude/conso-pilot/` :
 npm test
 ```
 
-`node:test`, sans dépendance. Les entrées de hook réelles relevées par la sonde du lot 0 sont dans `test/fixtures/hooks/`.
+`node:test`, sans dépendance externe / no external dependencies.
+
+## License
+
+MIT
