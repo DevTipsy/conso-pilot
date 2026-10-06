@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+'use strict';
+// /conso : rapport de consommation, recopié tel quel par Claude.
+try {
+  process.stdout.write(`${require('../lib/report-conso').buildConsoReport()}\n`);
+} catch (err) {
+  require('../lib/util').logError(err, 'conso');
+  process.stdout.write(`conso-pilot : rapport indisponible (${err.message}).\n`);
+}

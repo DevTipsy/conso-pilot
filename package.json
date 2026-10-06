@@ -1,0 +1,11 @@
+{
+  "name": "conso-pilot",
+  "version": "0.6.0",
+  "private": true,
+  "description": "Plugin Claude Code : pilotage de la consommation de tokens",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

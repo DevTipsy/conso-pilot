@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+'use strict';
+// /conso-pilot:status : configuration, état de session, intégrations, dernières erreurs.
+try {
+  const report = require('../lib/report-status').buildStatusReport({
+    sessionId: process.argv[2] || process.env.CLAUDE_CODE_SESSION_ID || null,
+    project: process.env.CLAUDE_PROJECT_DIR || process.cwd(),
+  });
+  process.stdout.write(`${report}\n`);
+} catch (err) {
+  require('../lib/util').logError(err, 'status');
+  process.stdout.write(`conso-pilot : état indisponible (${err.message}).\n`);
+}

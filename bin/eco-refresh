@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+'use strict';
+// Recalcul détaché du total des gains (segment « éco » de la barre d'état, spec §4).
+try {
+  require('../lib/gains').refreshEco();
+} catch (err) {
+  require('../lib/util').logError(err, 'eco-refresh');
+}

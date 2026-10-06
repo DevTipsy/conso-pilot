@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+'use strict';
+// /lean (spec §6) :
+//   lean                                              rapport (recopié tel quel par Claude)
+//   lean off|on <nom> [--scope local|projet|user] [--apply]   désactive / réactive un plugin ou un serveur de .mcp.json
+// Sans --apply : aperçu et diff seulement, aucune écriture.
+const path = require('path');
+
+const args = process.argv.slice(2);
+const apply = args.includes('--apply');
+const scopeIdx = args.indexOf('--scope');
+const scope = scopeIdx >= 0 ? args[scopeIdx + 1] : 'local';
+const words = args.filter((a, i) => !a.startsWith('--') && !(scopeIdx >= 0 && i === scopeIdx + 1));
+const ALIASES = { off: 'off', désactiver: 'off', desactiver: 'off', on: 'on', activer: 'on', réactiver: 'on', reactiver: 'on' };
+const action = ALIASES[(words[0] || '').toLowerCase()] || null;
+const name = words.slice(1).join(' ');
+const self = `node "${path.resolve(__filename)}"`;
+
+function out(lines) {
+  process.stdout.write(`${lines.filter((l) => l != null).join('\n')}\n`);
+}
+
+try {
+  const lean = require('../lib/lean');
+  const { home } = require('../lib/format');
+  const { diffLines } = require('../lib/setup');
+  const project = require('../lib/state').projectOf({ cwd: process.cwd() });
+
+  if (!action) {
+    out([lean.buildLeanReport({ project })]);
+  } else if (!name) {
+    out(['Usage : /lean off <nom> [--scope local|projet|user] · /lean on <nom> [--scope …]']);
+  } else if (apply) {
+    const { plan, backupFile } = lean.applyToggle({ project, name, action, scope });
+    if (plan.target.manual) out([plan.target.manual]);
+    else {
+      out([
+        plan.changed ? `✅ ${plan.target.name} ${action === 'off' ? 'désactivé' : 'réactivé'} (${home(plan.settings.file)}).` : `Rien à modifier dans ${home(plan.settings.file)}.`,
+        backupFile ? `Sauvegarde : ${home(backupFile)}` : null,
+        plan.changed ? 'Prise en compte dans la prochaine discussion (ou après redémarrage de la session).' : null,
+      ]);
+    }
+  } else {
+    const plan = lean.planToggle({ project, name, action, scope });
+    if (plan.target.manual) out([plan.target.manual]);
+    else if (!plan.changed) out([`${plan.target.name} est déjà ${action === 'off' ? 'désactivé' : 'actif'} dans ${home(plan.settings.file)} : rien à modifier.`]);
+    else {
+      const what = plan.target.kind === 'plugin' ? `plugin \`${plan.target.key}\`` : `serveur MCP \`${plan.target.name}\` (.mcp.json)`;
+      const where = { local: 'réglages locaux du projet, non partagés', projet: 'réglages partagés du projet', user: 'tous les projets' }[scope];
+      out([
+        `## conso-pilot — ${action === 'off' ? 'désactiver' : 'réactiver'} ${what} (aperçu, rien n'est écrit)`,
+        '',
+        `Fichier : \`${home(plan.settings.file)}\` (${where}).`,
+        '```diff', plan.settings.raw == null ? `(nouveau fichier)\n${plan.text.trimEnd().split('\n').map((l) => `+ ${l}`).join('\n')}` : diffLines(plan.settings.raw, plan.text), '```',
+        '',
+        '⚠️ En cours de discussion, ce changement peut invalider le cache : de préférence, applique-le puis ouvre une nouvelle discussion.',
+        plan.settings.raw == null ? null : 'Une sauvegarde datée est faite avant écriture.',
+        '',
+        `Commande d'application : \`${self} ${action} ${name}${scope === 'local' ? '' : ` --scope ${scope}`} --apply\``,
+      ]);
+    }
+  }
+} catch (err) {
+  require('../lib/util').logError(err, `lean ${args.join(' ')}`);
+  out([`conso-pilot : /lean impossible (${err.message}). Aucun fichier modifié.`]);
+  process.exitCode = 1;
+}

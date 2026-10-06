@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+'use strict';
+// /handoff : enregistre le résumé rédigé par Claude, reçu sur l'entrée standard (spec §5.2).
+//   --prepare : affiche la commande d'enregistrement à utiliser (chemin absolu de ce script).
+const fs = require('fs');
+const path = require('path');
+
+const project = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const sessionId = process.env.CLAUDE_CODE_SESSION_ID || null;
+
+try {
+  const { loadConfig } = require('../lib/config');
+  const state = require('../lib/state');
+  const journal = require('../lib/journal');
+  const handoff = require('../lib/handoff');
+  const { tokens, home } = require('../lib/format');
+  const st = (sessionId && state.loadState(sessionId)) || state.latestStateFor(project);
+
+  if (process.argv[2] === '--prepare') {
+    const ctx = st && st.lastContext != null ? `contexte actuel ${tokens(st.lastContext)}` : 'contexte inconnu';
+    const cmd = require('../lib/setup').saveHandoffCommand(path.resolve(__filename));
+    process.stdout.write(`Commande d'enregistrement (${ctx}) :\n${cmd} <<'EOF'\n`);
+    process.exit(0);
+  }
+
+  const text = fs.readFileSync(0, 'utf8');
+  const { file, meta } = handoff.saveHandoff({
+    text,
+    sessionId: sessionId || (st && st.session),
+    project,
+    contextTokens: st ? st.lastContext : null,
+    cfg: loadConfig(),
+  });
+  if (st) {
+    st.handoffDone = true; // désactive l'alerte « handoff » (§3.1)
+    st.handoffAt = meta.created;
+    state.saveState(st);
+  }
+  journal.append({ type: 'handoff', project, session: meta.session, context: meta.context_tokens, file: path.basename(file) });
+  process.stdout.write(`Handoff enregistré : ${home(file)}${meta.objectif ? ` (${meta.objectif})` : ''}\n`);
+  process.stdout.write(`Rechargé automatiquement après /clear (dans les ${loadConfig().clearResumeMinutes} min) ou dans une nouvelle discussion.\n`);
+} catch (err) {
+  require('../lib/util').logError(err, 'save-handoff');
+  process.stdout.write(`conso-pilot : handoff non enregistré (${err.message}).\n`);
+  process.exit(1);
+}

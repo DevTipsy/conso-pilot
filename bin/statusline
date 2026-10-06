@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+'use strict';
+// Barre d'état (spec §4). Si /conso-pilot:setup l'a enchaînée, l'ancienne commande est exécutée
+// avec la même entrée et sa sortie est placée en préfixe.
+const fs = require('fs');
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+let raw = '';
+let prefix = '';
+try {
+  raw = fs.readFileSync(0, 'utf8');
+  const { dataDir, readJson } = require('../lib/util');
+  const inst = readJson(path.join(dataDir(), 'install.json'), null);
+  const prev = inst && inst.statusMode === 'chain' && inst.previousStatusLine && inst.previousStatusLine.command;
+  if (prev) {
+    const r = spawnSync('/bin/sh', ['-c', prev], { input: raw, encoding: 'utf8', timeout: 2000 });
+    prefix = (r.stdout || '').replace(/\s+$/, '');
+  }
+  const { loadConfig } = require('../lib/config');
+  const line = require('../lib/statusline').render(JSON.parse(raw || '{}'), loadConfig(), {
+    columns: Number(process.env.COLUMNS) || null,
+  });
+  process.stdout.write(prefix && line ? `${prefix} · ${line}` : prefix || line);
+} catch (err) {
+  require('../lib/util').logError(err, 'statusline');
+  if (prefix) process.stdout.write(prefix);
+}

@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+'use strict';
+// /reprendre : affiche le dernier handoff du projet ; --auto : la dernière sauvegarde automatique (spec §5.4).
+try {
+  const { loadConfig } = require('../lib/config');
+  const handoff = require('../lib/handoff');
+  const project = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const auto = process.argv.slice(2).includes('--auto');
+  const doc = auto
+    ? handoff.readLatestAuto(project, process.env.CLAUDE_CODE_SESSION_ID)
+    : handoff.readLatest(project);
+  if (!doc) {
+    process.stdout.write(auto
+      ? 'Aucune sauvegarde automatique pour ce projet.\n'
+      : 'Aucun handoff pour ce projet (lance /handoff en fin de session ; /reprendre --auto charge la sauvegarde automatique).\n');
+  } else {
+    process.stdout.write(`${handoff.injectionText(doc, loadConfig(), auto ? 'sauvegarde automatique' : 'handoff')}\n`);
+  }
+} catch (err) {
+  require('../lib/util').logError(err, 'reprendre');
+  process.stdout.write(`conso-pilot : reprise indisponible (${err.message}).\n`);
+}

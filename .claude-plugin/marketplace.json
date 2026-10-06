@@ -1,0 +1,12 @@
+{
+  "name": "conso-pilot",
+  "owner": { "name": "Thibault" },
+  "plugins": [
+    {
+      "name": "conso-pilot",
+      "source": "./",
+      "description": "Mesure et réduit la consommation de tokens de Claude Code.",
+      "version": "0.6.0"
+    }
+  ]
+}

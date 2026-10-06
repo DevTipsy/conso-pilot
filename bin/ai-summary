@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+'use strict';
+// Résumé IA optionnel d'une sauvegarde automatique (aiSummary, spec §5.3). Lancé détaché ; consomme du quota.
+// Écrit <session8>.summary.md à côté de la sauvegarde ; lancé avec CONSO_PILOT_DISABLE=1 (pas de hooks).
+const fs = require('fs');
+const { spawnSync } = require('child_process');
+
+const file = process.argv[2];
+try {
+  const prompt = 'Résume en 10 lignes maximum, en français, cette sauvegarde de session de développement : '
+    + 'objectif, état, prochaines étapes. Réponds uniquement par le résumé.\n\n';
+  const r = spawnSync('claude', ['-p', '--model', 'haiku'], {
+    input: prompt + fs.readFileSync(file, 'utf8'),
+    encoding: 'utf8',
+    timeout: 120000,
+    env: { ...process.env, CONSO_PILOT_DISABLE: '1' },
+  });
+  if (r.status !== 0 || !r.stdout.trim()) throw new Error(`claude -p : code ${r.status} ${String(r.stderr || '').slice(0, 200)}`);
+  require('../lib/util').writeTextAtomic(require('../lib/handoff').summaryPath(file), `${r.stdout.trim()}\n`);
+} catch (err) {
+  require('../lib/util').logError(err, 'ai-summary');
+}

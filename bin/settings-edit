@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+'use strict';
+// Modifications de ~/.claude/settings.json (spec §10), lancées par Claude après confirmation.
+//   setup      [--chain|--replace|--keep] [--apply]   barre d'état + permission de save-handoff
+//   uninstall  [--apply]                              retire ce que setup a ajouté (données conservées)
+// Sans --apply : plan et diff seulement, aucune écriture.
+const path = require('path');
+
+const args = process.argv.slice(2);
+const action = args[0];
+const apply = args.includes('--apply');
+const mode = ['chain', 'replace', 'keep'].find((m) => args.includes(`--${m}`)) || null;
+const self = `node "${path.resolve(__filename)}"`;
+
+function out(lines) {
+  process.stdout.write(`${lines.filter((l) => l != null).join('\n')}\n`);
+}
+
+try {
+  const setup = require('../lib/setup');
+  const { home } = require('../lib/format');
+
+  if (action === 'setup') {
+    if (apply) {
+      const { plan, backupFile } = setup.applySetup(mode || 'chain');
+      out([
+        plan.changed ? `✅ ${home(plan.settings.file)} mis à jour.` : `Rien à modifier dans ${home(plan.settings.file)}.`,
+        backupFile ? `Sauvegarde : ${home(backupFile)}` : null,
+        `Lanceurs installés dans ${home(path.dirname(setup.shimPath('statusline')))}/`,
+        "La barre d'état s'affiche dans la CLI (l'app desktop ne l'affiche pas). /conso-pilot:uninstall pour tout retirer.",
+      ]);
+    } else {
+      const plan = setup.planSetup(mode);
+      const lines = ['## conso-pilot — setup (aperçu, rien n\'est écrit)'];
+      if (plan.notes.length) lines.push('', ...plan.notes.map((n) => `- ${n}`));
+      if (plan.previous && !setup.isOurStatusLine(plan.previous)) {
+        lines.push(`- Barre d'état existante : \`${plan.previous.command}\``);
+      }
+      if (!plan.changed) {
+        lines.push('', 'Rien à modifier.');
+      } else {
+        lines.push('', `Diff de \`${home(plan.settings.file)}\` (${plan.choice ? 'option « enchaîner »' : 'proposé'}) :`, '```diff',
+          setup.diffLines(plan.settings.raw || '', plan.text), '```', '');
+        lines.push('Une sauvegarde datée est faite avant écriture. Commande(s) d\'application :');
+        if (plan.choice) {
+          lines.push(`- enchaîner (recommandé : l'ancienne barre reste affichée en préfixe) : \`${self} setup --apply --chain\``);
+          lines.push(`- remplacer l'ancienne barre : \`${self} setup --apply --replace\``);
+          lines.push(`- garder l'ancienne barre, ajouter seulement la permission : \`${self} setup --apply --keep\``);
+        } else {
+          lines.push(`- \`${self} setup --apply${mode ? ` --${mode}` : ''}\``);
+        }
+      }
+      out(lines);
+    }
+  } else if (action === 'uninstall') {
+    if (apply) {
+      const { plan, backupFile } = setup.applyUninstall();
+      out([
+        plan.changed ? `✅ ${home(plan.settings.file)} ${plan.restored ? 'restauré à l\'identique' : 'nettoyé'}.` : 'Rien à retirer de settings.json.',
+        backupFile ? `Sauvegarde : ${home(backupFile)}` : null,
+        'Données conservées dans ~/.claude/conso-pilot/ (le plugin se désinstalle avec `claude plugin uninstall conso-pilot@conso-pilot`).',
+      ]);
+    } else {
+      const plan = setup.planUninstall();
+      const lines = ['## conso-pilot — uninstall (aperçu, rien n\'est écrit)', ''];
+      if (!plan.inst) lines.push('Aucune installation enregistrée par /conso-pilot:setup : rien à retirer.');
+      else if (!plan.changed) lines.push('settings.json ne contient plus rien de conso-pilot. Lanceurs à supprimer seulement.', '', `Commande d'application : \`${self} uninstall --apply\``);
+      else {
+        lines.push(plan.restored ? 'settings.json inchangé depuis le setup : restauration à l\'identique.' : 'settings.json modifié depuis le setup : retrait ciblé.');
+        lines.push('', `Diff de \`${home(plan.settings.file)}\` :`, '```diff',
+          plan.text == null ? '(fichier supprimé : il n\'existait pas avant le setup)' : setup.diffLines(plan.settings.raw || '', plan.text),
+          '```', '', `Commande d'application : \`${self} uninstall --apply\``);
+      }
+      out(lines);
+    }
+  } else {
+    out(['Usage : settings-edit setup [--chain|--replace|--keep] [--apply] | settings-edit uninstall [--apply]']);
+    process.exitCode = 2;
+  }
+} catch (err) {
+  require('../lib/util').logError(err, `settings-edit ${action}`);
+  out([`conso-pilot : ${action} impossible (${err.message}). Aucun fichier modifié.`]);
+  process.exitCode = 1;
+}
