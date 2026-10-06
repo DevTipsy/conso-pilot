@@ -1,6 +1,6 @@
 ---
 description: État de conso-pilot (config, session, intégrations, erreurs)
-allowed-tools: Bash(node:*)
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/bin/status":*)
 disable-model-invocation: true
 ---
 

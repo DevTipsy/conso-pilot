@@ -3,5 +3,6 @@
   "version": "0.6.0",
   "description": "Mesure et réduit la consommation de tokens de Claude Code : contexte, handoff, cache, coût pondéré.",
   "author": { "name": "Thibault" },
-  "license": "MIT"
+  "license": "MIT",
+  "icon": "./.claude-plugin/icon.png"
 }

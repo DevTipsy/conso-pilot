@@ -1,7 +1,7 @@
 ---
 description: Contexte chargé par les plugins, skills et serveurs MCP ; désactive ce qui ne sert pas
 argument-hint: "[off|on <nom> [--scope local|projet|user]]"
-allowed-tools: Bash(node:*), AskUserQuestion
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/bin/lean":*), AskUserQuestion
 disable-model-invocation: true
 ---
 

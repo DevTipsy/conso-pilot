@@ -1,6 +1,6 @@
 ---
 description: Rapport de consommation de tokens (par projet, modèle, sous-agents)
-allowed-tools: Bash(node:*)
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/bin/conso":*)
 disable-model-invocation: true
 ---
 

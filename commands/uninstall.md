@@ -1,6 +1,6 @@
 ---
 description: Retire la barre d'état et la permission ajoutées par setup (restaure settings.json), garde les données
-allowed-tools: Bash(node:*), AskUserQuestion
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/bin/settings-edit":*), AskUserQuestion
 disable-model-invocation: true
 ---
 

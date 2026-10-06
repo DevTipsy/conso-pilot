@@ -1,6 +1,6 @@
 ---
 description: Installe la barre d'état et la permission de /handoff (diff et confirmation avant toute écriture)
-allowed-tools: Bash(node:*), AskUserQuestion
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/bin/settings-edit":*), AskUserQuestion
 disable-model-invocation: true
 ---
 

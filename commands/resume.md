@@ -1,7 +1,7 @@
 ---
 description: Charge le dernier handoff du projet (--auto : la dernière sauvegarde automatique)
 argument-hint: "[--auto]"
-allowed-tools: Bash(node:*)
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/bin/reprendre":*)
 disable-model-invocation: true
 ---
 

@@ -1,7 +1,7 @@
 ---
 description: Résumé structuré de la session, enregistré, puis discussion vidée (le résumé est rechargé). --keep pour ne pas vider
 argument-hint: "[--keep]"
-allowed-tools: Bash(node:*), ToolSearch, mcp__ccd_session_mgmt__clear_session
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/bin/save-handoff":*), Bash(node ~/.claude/conso-pilot/bin/save-handoff:*), ToolSearch, mcp__ccd_session_mgmt__clear_session
 disable-model-invocation: true
 ---
 
