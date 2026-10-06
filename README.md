@@ -47,7 +47,7 @@ Update later:
 |---|---|
 | `/conso` | Consumption by project and model (today / 7 days), raw and weighted; sub-agent share; most expensive sessions; estimated savings |
 | `/handoff` | Claude writes a compact summary of the session, saves it, and clears the chat; the summary is reloaded immediately |
-| `/reprendre` | Reloads the project's last handoff (`--auto` for the latest auto-save) |
+| `/resume` | Reloads the project's last handoff (`--auto` for the latest auto-save) |
 | `/lean` | Weight of loaded plugins / skills / connectors / MCP servers; `/lean off <name>` disables one after confirmation |
 | `/conso-pilot:status` | Config, session state, detected integrations, last 5 errors |
 | `/conso-pilot:setup` / `uninstall` | Install or remove the status line and handoff permission |
@@ -98,7 +98,7 @@ Mise à jour plus tard :
 |---|---|
 | `/conso` | Consommation par projet et modèle (jour / 7 jours), brute et pondérée ; part des sous-agents ; sessions les plus coûteuses ; gains estimés |
 | `/handoff` | Claude rédige un résumé compact de la session, l'enregistre et vide la discussion ; le résumé est rechargé aussitôt |
-| `/reprendre` | Recharge le dernier handoff du projet (`--auto` : la dernière sauvegarde automatique) |
+| `/resume` | Recharge le dernier handoff du projet (`--auto` : la dernière sauvegarde automatique) |
 | `/lean` | Poids des plugins / skills / connecteurs / serveurs MCP chargés ; `/lean off <nom>` en désactive un après confirmation |
 | `/conso-pilot:status` | Configuration, état de la session, intégrations détectées, 5 dernières erreurs |
 | `/conso-pilot:setup` / `uninstall` | Installe ou retire la barre d'état et la permission de handoff |

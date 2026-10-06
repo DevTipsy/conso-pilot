@@ -160,13 +160,13 @@ Claude **n'écrit pas le fichier lui-même** : il exécute `node "<chemin absolu
 ### 5.4 Relecture automatique (hook `SessionStart`)
 | `source` | Comportement |
 |---|---|
-| `clear` | Injecter `latest.md` en `additionalContext` (plafond `resumeMaxTokens` = 2 000) **seulement s'il a moins de `clearResumeMinutes` (30 min)** : c'est le cas « /handoff puis /clear ». Sinon, `systemMessage` qui propose `/reprendre`. |
+| `clear` | Injecter `latest.md` en `additionalContext` (plafond `resumeMaxTokens` = 2 000) **seulement s'il a moins de `clearResumeMinutes` (30 min)** : c'est le cas « /handoff puis /clear ». Sinon, `systemMessage` qui propose `/resume`. |
 | `compact` | Ne rien injecter si context-mode est actif (il réinjecte déjà son snapshot) ; sinon injecter `latest.md` s'il date de la session courante. |
-| `startup` | Injecter si `latest.md` a moins de `autoResumeHours` (2 h). Sinon : « Handoff du <date> disponible : <objectif> — tape /reprendre pour le charger ». |
+| `startup` | Injecter si `latest.md` a moins de `autoResumeHours` (2 h). Sinon : « Handoff du <date> disponible : <objectif> — tape /resume pour le charger ». |
 | `resume` / `fork` | Ne rien injecter (déjà en contexte) ; alerte cache éventuelle (§3.3). |
 
 - En-tête de l'injection : « Reprise de la session précédente (handoff du <date>) ».
-- La sauvegarde `auto/` n'est **jamais injectée automatiquement** ; `/reprendre --auto` la charge à la main.
+- La sauvegarde `auto/` n'est **jamais injectée automatiquement** ; `/resume --auto` la charge à la main.
 - context-mode est « actif » si une entrée `context-mode@…` vaut `true` dans `enabledPlugins` effectif (utilisateur + projet).
 
 ## 6. Audit du contexte chargé + `/lean`
@@ -277,10 +277,10 @@ Script dont la sortie est affichée telle quelle (Claude ne relit aucun fichier)
 
 | Commande | Rôle |
 |---|---|
-| `/handoff` | Résumé structuré, enregistré par `bin/save-handoff`, puis discussion vidée (app) ; `--garder` pour ne pas vider |
+| `/handoff` | Résumé structuré, enregistré par `bin/save-handoff`, puis discussion vidée (app) ; `--keep` pour ne pas vider |
 | `/conso` | Rapport consommation + gains |
 | `/lean` | Audit et désactivation des plugins, skills, MCP |
-| `/reprendre` | Charge le dernier handoff du projet (`--auto` : la sauvegarde auto) |
+| `/resume` | Charge le dernier handoff du projet (`--auto` : la sauvegarde auto) |
 | `/conso-pilot:setup` | Crée la config, installe ou enchaîne la barre d'état, ajoute la permission de `save-handoff` ; affiche un diff et demande confirmation avant toute écriture ; sauvegarde datée des fichiers modifiés |
 | `/conso-pilot:status` | Config, seuils, état de la session, intégrations détectées (rtk, context-mode, barre d'état), 5 dernières erreurs de `errors.log` |
 | `/conso-pilot:uninstall` | Retire la barre d'état et la permission ajoutées (restaure la sauvegarde), garde les données |
@@ -301,7 +301,7 @@ Les tests automatisés (`npm test`, `node:test`, sans dépendance) rejouent des 
 6. Comptage : sur un transcript enregistré, la somme du journal = somme des `usage` dédoublonnés par `message.id`.
 7. Pause > TTL avec 50k de contexte → message bloqué ; renvoyé tel quel → passe. TTL détecté = 60 min sur un transcript avec `ephemeral_1h_input_tokens`, 5 min avec `ephemeral_5m_input_tokens`.
 8. Reprise (`resume`) d'une discussion de 150k vieille de 2 h → ligne « Cache expiré… » issue des champs natifs.
-9. Nouvelle discussion 5 h après un handoff → pas d'injection, une ligne propose `/reprendre`.
+9. Nouvelle discussion 5 h après un handoff → pas d'injection, une ligne propose `/resume`.
 10. `/handoff` → fichier daté + `latest.md`, sans demande de confirmation ; `/clear` dans les 30 min → résumé réinjecté (vérifier avec `/context`) ; `/clear` 2 h plus tard → simple proposition.
 11. `/compact` et `/clear` → `auto/<session>.md` à jour **avant** l'effacement ; `latest.md` inchangé ; `SessionEnd` < 500 ms.
 12. `Read DerivedData/…/gros.log` complet → refusé avec la raison ; `Grep "error" DerivedData/…` → autorisé avec message visible.
@@ -326,8 +326,8 @@ Les tests automatisés (`npm test`, `node:test`, sans dépendance) rejouent des 
 - **Lot 1** : mesure, état de session, journal, `/conso` (sans gains), `/conso-pilot:status`.
   - **Fait (2026-10-06)** : hooks `SessionStart`, `Stop`, `SubagentStop` (async), `PreCompact`, `SessionEnd`, `PostModelSwitch` (async) ; critères 6, 13, 14 et la partie mesure des critères 2, 5, 7 couverts par `npm test`. Journal vérifié sur un transcript réel (somme identique au calcul dédoublonné indépendant) ; `Stop` en 50 ms sur un transcript de 152 Mo.
   - Agents internes : `agent_type` vide **et** aucun transcript (`agent_transcript_path` inexistant) → rien à compter ; un agent sans type mais avec transcript est étiqueté par son `.meta.json` (`agentType`), sinon `internal:unknown`.
-- **Lot 2** : handoff, sauvegarde auto, relecture, `/reprendre`.
-  - **Fait (2026-10-06)** : `bin/save-handoff`, `bin/reprendre`, `/handoff`, `/reprendre`, sauvegarde auto (`Stop` toutes les 5 min, `PreCompact` et `SessionEnd` forcés), relecture `SessionStart` (§5.4), rétention, `aiSummary` ; critères 9, 10, 11 couverts par `npm test` (sauf la vérification `/context`, manuelle).
+- **Lot 2** : handoff, sauvegarde auto, relecture, `/resume`.
+  - **Fait (2026-10-06)** : `bin/save-handoff`, `bin/resume`, `/handoff`, `/resume`, sauvegarde auto (`Stop` toutes les 5 min, `PreCompact` et `SessionEnd` forcés), relecture `SessionStart` (§5.4), rétention, `aiSummary` ; critères 9, 10, 11 couverts par `npm test` (sauf la vérification `/context`, manuelle).
   - L'activité (demandes, fichiers, tâches, erreurs) est extraite pendant la lecture incrémentale de chaque `Stop` et gardée dans l'état de session ; seule l'écriture du fichier est espacée. `PreCompact` et `SessionEnd` journalisent aussi les appels lus avant eux (sinon perdus pour le journal).
   - Demandes retenues : lignes `user` non méta, `origin.kind` humain, sans `tool_result` ; rappels système retirés ; commandes réduites à `/nom args`. Tâches : `TodoWrite` remplace la liste, `TaskCreate` / `TaskUpdate` la modifient (identifiants numérotés dans l'ordre de création). Erreurs : `tool_result` en erreur d'un appel `Bash`.
   - Le chemin de `save-handoff` est appelé via `node` (couvert par `allowed-tools: Bash(node:*)` de la commande).
@@ -335,7 +335,7 @@ Les tests automatisés (`npm test`, `node:test`, sans dépendance) rejouent des 
   - **Fait (2026-10-06)** : hook `UserPromptSubmit` (plafond du handoff, cache expiré), alerte A sur `Stop`, alerte de reprise sur `SessionStart`, notifications détachées, `bin/statusline`, `bin/settings-edit` (`setup` / `uninstall`), commandes `/conso-pilot:setup` et `/conso-pilot:uninstall` ; critères 1, 2, 7, 8 et 18 couverts par `npm test`.
   - « Dernier message avec appel d'outil » et texte final : suivis pendant la lecture incrémentale (`cursor.lastMessage`) ; `last_assistant_message` tronqué (« … ») → texte du transcript. Tâche de fond sans statut lisible = en cours.
   - Alertes et `handoffDone` remis à zéro à chaque remesure de la baseline (nouvelle session, compactage).
-  - Cache expiré : une seule intervention par pause (clé = horodatage de la dernière réponse) : le message renvoyé passe, et un autre message aussi. Texte : « …ou fais /clear puis /reprendre --auto » (la sauvegarde auto n'est jamais rechargée seule, « rechargée » aurait été inexact).
+  - Cache expiré : une seule intervention par pause (clé = horodatage de la dernière réponse) : le message renvoyé passe, et un autre message aussi. Texte : « …ou fais /clear puis /resume --auto » (la sauvegarde auto n'est jamais rechargée seule, « rechargée » aurait été inexact).
   - Notification au déclencheur B : la première fois seulement (le `systemMessage` reste à chaque message).
   - Barre d'état : ses relevés vont dans `state/live/<session>.json` (jamais dans l'état des hooks, pour ne pas écraser le curseur du transcript) ; les hooks et `/conso-pilot:status` les appliquent s'ils sont plus récents que l'état. Contexte = `current_usage` avec `output_tokens` (même définition que §2.1). Segment « éco » lu dans `cache/eco.json`, produit au lot 4.
   - Le dossier du plugin change à chaque version (`plugins/cache/…/<version>`) : `statusLine` et la permission visent des **lanceurs stables** `~/.claude/conso-pilot/bin/{statusline,save-handoff}`, qui chargent le script du plugin indiqué par `plugin-root` (réécrit à chaque `SessionStart`). `save-handoff --prepare` affiche ce lanceur quand il existe, sans guillemets, pour que la règle `Bash(node <lanceur>:*)` corresponde.
@@ -365,7 +365,7 @@ Les tests automatisés (`npm test`, `node:test`, sans dépendance) rejouent des 
   - Effort : écart ≥ 2 crans dans les deux sens (`low` < `medium` < `high` < `xhigh` < `max`), sur Opus 5.5 / Sonnet 5.5 / Fable 5.1 seulement.
   - Suivi (`/conso`) : calculé à l'affichage — un conseil est suivi si un tour ultérieur de la même session utilise le modèle (famille) ou l'effort conseillé ; le journal reste en ajout simple.
   - `PreModelSwitch` : réponse `hookSpecificOutput.permissionDecision: "ask"` seulement si `source` ∈ `modelSwitchAskSources` (vide par défaut : l'app envoie `"sdk"`, où `ask` vaudrait refus) et contexte ajouté ≥ `modelSwitchGuardMinAddedTokens`.
-  - **`/handoff` vide aussi la discussion** (demande utilisateur) : dans l'app, la commande appelle `mcp__ccd_session_mgmt__clear_session` avec `"self"` (effectif à la fin du tour, approuvé par l'utilisateur) ; le `SessionStart` `clear` qui suit recharge le handoff (< `clearResumeMinutes`). En CLI, aucun outil ne peut lancer `/clear` : la commande demande de le taper. `/handoff --garder` ne vide pas.
+  - **`/handoff` vide aussi la discussion** (demande utilisateur) : dans l'app, la commande appelle `mcp__ccd_session_mgmt__clear_session` avec `"self"` (effectif à la fin du tour, approuvé par l'utilisateur) ; le `SessionStart` `clear` qui suit recharge le handoff (< `clearResumeMinutes`). En CLI, aucun outil ne peut lancer `/clear` : la commande demande de le taper. `/handoff --keep` ne vide pas.
 
 ## Annexe A — `config.json` par défaut
 

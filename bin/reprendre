@@ -12,7 +12,7 @@ try {
   if (!doc) {
     process.stdout.write(auto
       ? 'Aucune sauvegarde automatique pour ce projet.\n'
-      : 'Aucun handoff pour ce projet (lance /handoff en fin de session ; /reprendre --auto charge la sauvegarde automatique).\n');
+      : 'Aucun handoff pour ce projet (lance /handoff en fin de session ; /resume --auto charge la sauvegarde automatique).\n');
   } else {
     process.stdout.write(`${handoff.injectionText(doc, loadConfig(), auto ? 'sauvegarde automatique' : 'handoff')}\n`);
   }

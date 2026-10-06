@@ -104,7 +104,7 @@ test('critère 7 : pause > TTL avec 50k → message bloqué, renvoyé tel quel �
   patchState(sb, () => ({ lastResponseAt: new Date(Date.now() - 75 * 60000).toISOString() }));
   const out = prompt(sb, 'question');
   assert.strictEqual(out.decision, 'block');
-  assert.strictEqual(out.reason, 'Cache expiré (pause de 1 h 15) : ce message va refacturer ~52k tokens. Renvoie-le (↑) pour continuer, ou fais /clear puis /reprendre --auto.');
+  assert.strictEqual(out.reason, 'Cache expiré (pause de 1 h 15) : ce message va refacturer ~52k tokens. Renvoie-le (↑) pour continuer, ou fais /clear puis /resume --auto.');
   assert.strictEqual(out.systemMessage, undefined);
   assert.strictEqual(readNotifications(sb.env).length, 1);
   assert.strictEqual(prompt(sb, 'question'), null, 'renvoyé tel quel : passe');

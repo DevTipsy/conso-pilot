@@ -214,7 +214,7 @@ test('SessionStart clear : handoff < 30 min réinjecté, sinon proposition (crit
   ageLatest(sb, 120);
   const late = JSON.parse(runHook(sb.env, input(sb, 'SessionStart', { session_id: 'autre', source: 'clear' })).stdout);
   assert.strictEqual(late.hookSpecificOutput, undefined);
-  assert.match(late.systemMessage, /^Handoff du .+ disponible : Implémenter le lot 2 de conso-pilot\. — tape \/reprendre pour le charger\.$/);
+  assert.match(late.systemMessage, /^Handoff du .+ disponible : Implémenter le lot 2 de conso-pilot\. — tape \/resume pour le charger\.$/);
 });
 
 test('SessionStart startup : injecté si < 2 h ; 5 h après → simple proposition (critère 9)', () => {
@@ -226,7 +226,7 @@ test('SessionStart startup : injecté si < 2 h ; 5 h après → simple propositi
   ageLatest(sb, 300);
   const out = JSON.parse(runHook(sb.env, input(sb, 'SessionStart', { session_id: 's3', source: 'startup' })).stdout);
   assert.strictEqual(out.hookSpecificOutput, undefined);
-  assert.match(out.systemMessage, /tape \/reprendre/);
+  assert.match(out.systemMessage, /tape \/resume/);
 });
 
 test('SessionStart compact : rien si context-mode actif ; sinon handoff de la session courante seulement', () => {
@@ -252,7 +252,7 @@ test('relecture plafonnée à resumeMaxTokens', () => {
   assert.match(ctx, /tronqué à ~2000 tokens\)$/);
 });
 
-test('/reprendre : dernier handoff ; --auto : sauvegarde auto d\'une autre session', () => {
+test('/resume : dernier handoff ; --auto : sauvegarde auto d\'une autre session', () => {
   const sb = sandbox();
   assert.match(reprendre(sb), /Aucun handoff pour ce projet/);
   appendLines(sb.transcript, [humanLine('travail de la session précédente'), ...assistantLines({ output: 1 })]);
