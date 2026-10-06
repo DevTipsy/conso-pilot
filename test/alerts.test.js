@@ -104,7 +104,7 @@ test('critère 7 : pause > TTL avec 50k → message bloqué, renvoyé tel quel �
   patchState(sb, () => ({ lastResponseAt: new Date(Date.now() - 75 * 60000).toISOString() }));
   const out = prompt(sb, 'question');
   assert.strictEqual(out.decision, 'block');
-  assert.strictEqual(out.reason, 'Cache expiré (pause de 1 h 15) : ce message va refacturer ~52k tokens. Renvoie-le (↑) pour continuer, ou fais /clear puis /resume --auto.');
+  assert.strictEqual(out.reason, 'Cache expiré (pause de 1 h 15) : ce message va refacturer ~52k tokens. Renvoie-le (↑) pour continuer tel quel, ou fais /clear (une sauvegarde automatique est déjà prise) puis /resume --auto pour repartir au propre avec le contexte rechargé.');
   assert.strictEqual(out.systemMessage, undefined);
   assert.strictEqual(readNotifications(sb.env).length, 1);
   assert.strictEqual(prompt(sb, 'question'), null, 'renvoyé tel quel : passe');
@@ -148,7 +148,7 @@ test('critère 8 : reprise d\'une discussion de 150k vieille de 2 h → ligne «
   const sb = sandbox();
   const r = runHook(sb.env, input(sb, 'SessionStart', { source: 'resume', prompt_cache_likely_expired: true, context_tokens: 150000, seconds_since_last_response: 7200 }));
   assert.strictEqual(JSON.parse(r.stdout).systemMessage,
-    'Cache expiré : le prochain message refacturera ~150k tokens. Si tu changes de sujet, fais plutôt /clear (la sauvegarde sera proposée).');
+    'Cache expiré : le prochain message refacturera ~150k tokens. Si tu changes de sujet, fais plutôt /clear — une sauvegarde automatique est prise au passage, et /resume --auto la recharge si besoin.');
   assert.strictEqual(readNotifications(sb.env).length, 1);
   const warm = runHook(sb.env, input(sb, 'SessionStart', { source: 'resume', prompt_cache_likely_expired: false, context_tokens: 150000 }));
   assert.strictEqual(warm.stdout, '');
