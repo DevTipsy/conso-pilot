@@ -9,6 +9,8 @@ disable-model-invocation: true
 
 Rédige le handoff de cette session à partir de ce que tu sais déjà : **ne relis aucun fichier et ne lance aucune autre commande**. En français, 1 500 tokens au plus, Markdown, sections dans cet ordre (omets une section vide) :
 
+## Message en attente
+Si le script a affiché un « Message en attente » ci-dessus, recopie-le ici **mot pour mot** (c'est un message bloqué avant envoi, absent du contexte) ; sinon omets cette section.
 ## Objectif
 Une seule ligne.
 ## État actuel

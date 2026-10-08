@@ -6,7 +6,7 @@
       "name": "conso-pilot",
       "source": "./",
       "description": "Mesure et réduit la consommation de tokens de Claude Code.",
-      "version": "0.6.0"
+      "version": "0.7.0"
     }
   ]
 }

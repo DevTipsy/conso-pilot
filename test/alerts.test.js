@@ -104,7 +104,7 @@ test('critère 7 : pause > TTL avec 50k → message bloqué, renvoyé tel quel �
   patchState(sb, () => ({ lastResponseAt: new Date(Date.now() - 75 * 60000).toISOString() }));
   const out = prompt(sb, 'question');
   assert.strictEqual(out.decision, 'block');
-  assert.strictEqual(out.reason, 'Cache expiré (pause de 1 h 15) : ce message va refacturer ~52k tokens. Renvoie-le (↑) pour continuer tel quel, ou fais /clear (une sauvegarde automatique est déjà prise) puis /resume --auto pour repartir au propre avec le contexte rechargé.');
+  assert.strictEqual(out.reason, 'Cache expiré (pause de 1 h 15) : ce message va refacturer ~52k tokens. Renvoie-le (↑) pour continuer tel quel, ou fais /handoff pour tout sauvegarder (ce message compris), repartir au propre et recharger où tu en étais, en une commande.');
   assert.strictEqual(out.systemMessage, undefined);
   assert.strictEqual(readNotifications(sb.env).length, 1);
   assert.strictEqual(prompt(sb, 'question'), null, 'renvoyé tel quel : passe');
@@ -113,6 +113,32 @@ test('critère 7 : pause > TTL avec 50k → message bloqué, renvoyé tel quel �
   turn(sb, 53002);
   patchState(sb, () => ({ lastResponseAt: new Date(Date.now() - 61 * 60000).toISOString() }));
   assert.strictEqual(prompt(sb, 'encore').decision, 'block');
+});
+
+test('critère 7 : le message bloqué est sauvegardé (absent du transcript) et ressort dans /resume --auto', () => {
+  const sb = sandbox();
+  turn(sb, 52002);
+  patchState(sb, () => ({ lastResponseAt: new Date(Date.now() - 75 * 60000).toISOString() }));
+  const out = prompt(sb, 'mon prompt important qui a été bloqué');
+  assert.strictEqual(out.decision, 'block');
+  // Sauvegarde auto écrite immédiatement (aucun Stop ne suit un blocage).
+  const project = sb.env.CLAUDE_PROJECT_DIR;
+  const slug = project.replace(/[/.]/g, '-');
+  const autoDir = path.join(sb.env.CONSO_PILOT_HOME, 'handoffs', slug, 'auto');
+  const file = fs.readdirSync(autoDir).find((n) => n.endsWith('.md'));
+  const body = fs.readFileSync(path.join(autoDir, file), 'utf8');
+  assert.match(body, /## Message en attente/);
+  assert.match(body, /mon prompt important qui a été bloqué/);
+  // Lu par /resume --auto depuis une nouvelle session (même home que le sandbox).
+  const prevHome = process.env.CONSO_PILOT_HOME;
+  process.env.CONSO_PILOT_HOME = sb.env.CONSO_PILOT_HOME;
+  try {
+    const doc = require('../lib/handoff').readLatestAuto(project, 'autre-session');
+    assert.match(doc.body, /mon prompt important qui a été bloqué/);
+  } finally {
+    if (prevHome === undefined) delete process.env.CONSO_PILOT_HOME;
+    else process.env.CONSO_PILOT_HOME = prevHome;
+  }
 });
 
 test('critère 7 : modes hint et off, seuil de contexte, TTL de 5 min', () => {

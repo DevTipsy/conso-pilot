@@ -1,6 +1,6 @@
 {
   "name": "conso-pilot",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Mesure et réduit la consommation de tokens de Claude Code : contexte, handoff, cache, coût pondéré.",
   "author": { "name": "Thibault" },
   "license": "MIT"

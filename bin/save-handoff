@@ -19,6 +19,9 @@ try {
   if (process.argv[2] === '--prepare') {
     const ctx = st && st.lastContext != null ? `contexte actuel ${tokens(st.lastContext)}` : 'contexte inconnu';
     const cmd = require('../lib/setup').saveHandoffCommand(path.resolve(__filename));
+    if (st && st.blockedPrompt) {
+      process.stdout.write(`Message en attente (bloqué avant envoi, à inclure tel quel dans la section « Message en attente » du handoff) :\n${st.blockedPrompt}\n\n`);
+    }
     process.stdout.write(`Commande d'enregistrement (${ctx}) :\n${cmd} <<'EOF'\n`);
     process.exit(0);
   }
@@ -34,6 +37,7 @@ try {
   if (st) {
     st.handoffDone = true; // désactive l'alerte « handoff » (§3.1)
     st.handoffAt = meta.created;
+    st.blockedPrompt = null; // le message en attente est maintenant consigné dans le handoff
     state.saveState(st);
   }
   journal.append({ type: 'handoff', project, session: meta.session, context: meta.context_tokens, file: path.basename(file) });
